@@ -83,10 +83,8 @@
     </div>
   </div>
   <script>
-    const BACKEND_URL = `${window.location.protocol}//${window.location.hostname}:28889`;
-
     document.addEventListener('DOMContentLoaded', () => {
-      fetch(`${BACKEND_URL}/jobbie/api/csv`)
+      fetch(`/jobbie/api/csv`)
         .then(response => response.text())
         .then(text => loadCSVText(text))
         .catch(error => console.error('Error fetching CSV:', error));
@@ -154,7 +152,7 @@
 
       if (!fromUndoRedo) {
         const csv = toCSV(header ? [header, ...data] : data);
-        fetch(`${BACKEND_URL}/jobbie/api/csv`, {
+        fetch(`/jobbie/api/csv`, {
           method: 'POST',
           body: csv,
           headers: { 'Content-Type': 'text/csv' }
@@ -249,7 +247,7 @@
           container.appendChild(favicon);
           container.appendChild(link);
 
-          fetch(`${BACKEND_URL}/jobbie/api/link-preview?url=${encodeURIComponent(cellValue)}`)
+          fetch(`/jobbie/api/link-preview?url=${encodeURIComponent(cellValue)}`)
             .then(response => response.json())
             .then(preview => {
               console.log('Link preview data:', preview);
