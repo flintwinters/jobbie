@@ -83,7 +83,7 @@
     </div>
   </div>
   <script>
-    const BACKEND_URL = 'http://localhost:28889';
+    const BACKEND_URL = `${window.location.protocol}//${window.location.hostname}:28889`;
 
     document.addEventListener('DOMContentLoaded', () => {
       fetch(`${BACKEND_URL}/jobbie/api/csv`)
