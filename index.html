@@ -329,6 +329,13 @@
       render();
     });
 
+    newEntryContainer.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addBtn.click();
+      }
+    });
+
 
 
     
