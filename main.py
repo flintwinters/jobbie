@@ -34,43 +34,31 @@ async def save_csv(request: Request):
         f.write(data)
     return {"message": "CSV file saved successfully."}
 
+import favicon
+
+...
+
 @app.get("/api/link-preview")
 async def link_preview(url: str):
     try:
-        response = requests.get(url, timeout=5)
+        # Use a standard user-agent to avoid being blocked
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
+        response = requests.get(url, timeout=5, headers=headers)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')
-        
+
         title = soup.find('title').text if soup.find('title') else ''
         
         favicon_url = ''
-        icon_links = soup.find_all("link", rel=lambda rel: rel and 'icon' in rel)
-        
-        if icon_links:
-            # Prioritize certain icon types
-            for rel_type in ["apple-touch-icon", "shortcut icon", "icon"]:
-                for link in icon_links:
-                    if rel_type in link.get('rel', []):
-                        favicon_url = link.get('href', '')
-                        if not urllib.parse.urlparse(favicon_url).scheme:
-                            favicon_url = urllib.parse.urljoin(url, favicon_url)
-                        break
-                if favicon_url:
-                    break
-        
-        if not favicon_url:
-            # Check for default favicon.ico
-            default_favicon_url = urllib.parse.urljoin(url, '/favicon.ico')
-            try:
-                fav_res = requests.head(default_favicon_url, timeout=2)
-                if fav_res.status_code == 200 and 'image' in fav_res.headers.get('Content-Type', ''):
-                     favicon_url = default_favicon_url
-            except requests.RequestException:
-                pass
+        icons = favicon.get(url)
+        if icons:
+            # Choose the first icon found
+            favicon_url = icons[0].url
 
         proxied_favicon_url = f"/api/favicon?url={urllib.parse.quote(favicon_url)}" if favicon_url else ""
         return JSONResponse({"title": title, "favicon": proxied_favicon_url})
-    except requests.RequestException:
+    except Exception as e:
+        print(f"Error getting link preview for {url}: {e}")
         return JSONResponse({"title": "", "favicon": ""}, status_code=400)
 
 @app.get("/api/favicon")
