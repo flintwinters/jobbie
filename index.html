@@ -73,6 +73,9 @@
           <tbody id="tbody"></tbody>
         </table>
       </div>
+    </div>
+  </div>
+  <script>
     document.addEventListener('DOMContentLoaded', () => {
       fetch('/api/csv')
         .then(response => response.text())
@@ -80,9 +83,6 @@
         .catch(error => console.error('Error fetching CSV:', error));
     });
   </script>
-    </div>
-  </div>
-
   <script>
     // Basic CSV parser that handles quoted fields and commas inside quotes.
     function parseCSV(text){
