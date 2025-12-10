@@ -43,10 +43,8 @@ To run this application on your local machine, follow these steps:
     ```bash
     python main.py
     ```
-    This will start the server, typically on `http://0.0.0.0:8000`.
+    This will start the server, typically on `http://0.0.0.0:28889`.
 
-4.  **Open the Frontend in Your Browser**:
+4.  **Access the Application**:
 
-    Open the `index.html` file located in the project root directory using your web browser. You can usually do this by dragging the file into your browser window or by navigating to its `file://` path.
-
-    The frontend will automatically connect to the running backend to load and save CSV data.
+    Open your web browser and navigate to `http://localhost:28889`. The backend server will serve the `index.html` file, and the application will be ready for use.

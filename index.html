@@ -84,13 +84,16 @@
   </div>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      fetch('http://localhost:28889/api/csv')
+      fetch(`${BACKEND_URL}/api/csv`)
         .then(response => response.text())
         .then(text => loadCSVText(text))
         .catch(error => console.error('Error fetching CSV:', error));
     });
   </script>
   <script>
+  <script>
+    const BACKEND_URL = 'http://localhost:28889';
+
     // Basic CSV parser that handles quoted fields and commas inside quotes.
     function parseCSV(text){
       const rows = [];
@@ -153,7 +156,7 @@
 
       if (!fromUndoRedo) {
         const csv = toCSV(header ? [header, ...data] : data);
-        fetch('http://localhost:8000/api/csv', {
+        fetch(`${BACKEND_URL}/api/csv`, {
           method: 'POST',
           body: csv,
           headers: { 'Content-Type': 'text/csv' }
@@ -248,13 +251,12 @@
           container.appendChild(favicon);
           container.appendChild(link);
 
-          fetch(`http://localhost:8000/api/link-preview?url=${encodeURIComponent(cellValue)}`)
+          fetch(`${BACKEND_URL}/api/link-preview?url=${encodeURIComponent(cellValue)}`)
             .then(response => response.json())
             .then(preview => {
               console.log('Link preview data:', preview);
               if (preview.favicon) {
-                favicon.src = `http://localhost:8000${preview.favicon}`;
-              }
+                favicon.src = `${BACKEND_URL}${preview.favicon}`;
               link.textContent = preview.title || cellValue;
             })
             .catch((error) => {

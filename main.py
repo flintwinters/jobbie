@@ -6,18 +6,25 @@ import uvicorn
 import requests
 from bs4 import BeautifulSoup
 import urllib.parse
+import favicon
 
 app = FastAPI()
 
+PORT = 28889
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:28889"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 CSV_FILE = "data.csv"
+
+@app.get("/")
+async def serve_index():
+    return FileResponse('index.html')
 
 @app.get("/api/csv")
 async def get_csv():
@@ -33,10 +40,6 @@ async def save_csv(request: Request):
     with open(CSV_FILE, "wb") as f:
         f.write(data)
     return {"message": "CSV file saved successfully."}
-
-import favicon
-
-...
 
 @app.get("/api/link-preview")
 async def link_preview(url: str):
@@ -78,4 +81,4 @@ async def favicon_proxy(url: str):
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=28889)
+    uvicorn.run(app, host="0.0.0.0", port=PORT)
