@@ -39,6 +39,8 @@
     .dropzone{padding:8px;border:2px dashed #444;border-radius:6px;text-align:center;color:#777}
     .row-number, th:first-child{width:3em;min-width:3em;text-align:center;color:#888;font-size:12px;background:#1e1e1e;padding:4px 0px;box-sizing:content-box}
     .date-column{width:12em;min-width:12em;text-align:center;color:#aaa;font-size:12px;font-family:monospace;background:#1e1e1e}
+    .checkbox-column{width:4em;min-width:4em;text-align:center;background:#1e1e1e}
+
 
     @media (max-width:640px){.wrap{flex-direction:column}}
   </style>
@@ -214,6 +216,15 @@
       }
     });
 
+    tbody.addEventListener('change', e => {
+      if (e.target.type === 'checkbox') {
+        const r = Number(e.target.dataset.r);
+        const c = header.indexOf('Done');
+        data[r][c] = e.target.checked ? 'true' : 'false';
+        saveState();
+      }
+    });
+
     let data = [];
     let header = null;
 
@@ -245,7 +256,7 @@
       newEntryContainer.innerHTML = '';
       for(let c=0;c<cols;c++){
         const columnName = header ? (header[c] ?? `Column ${c+1}`) : `Column ${c+1}`;
-        if (columnName === 'Date') {
+        if (columnName === 'Date' || columnName === 'Done') {
           continue; 
         }
         const input = document.createElement('input');
@@ -267,6 +278,9 @@
 
           if (header[c] === 'Date') {
             th.classList.add('date-column');
+            inner.contentEditable = 'false';
+          } else if (header[c] === 'Done') {
+            th.classList.add('checkbox-column');
             inner.contentEditable = 'false';
           } else {
             inner.contentEditable = 'true';
@@ -297,6 +311,15 @@
           const td = document.createElement('td');
           if (header[c] === 'Date') {
             td.classList.add('date-column');
+          } else if (header[c] === 'Done') {
+            td.classList.add('checkbox-column');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = data[r][c] === 'true';
+            checkbox.dataset.r = r;
+            td.appendChild(checkbox);
+            tr.appendChild(td);
+            continue;
           }
           td.appendChild(createCellContent(data[r][c]));
           td.dataset.r = r;
@@ -318,12 +341,24 @@
         header.unshift('Date');
         data.forEach(row => row.unshift(''));
       } else if (dateColumnIndex > 0) {
-        // Move date column to the beginning
         const dateHeader = header.splice(dateColumnIndex, 1)[0];
         header.unshift(dateHeader);
         data.forEach(row => {
           const dateCell = row.splice(dateColumnIndex, 1)[0];
           row.unshift(dateCell);
+        });
+      }
+
+      let doneColumnIndex = header.indexOf('Done');
+      if (doneColumnIndex === -1) {
+        header.splice(1, 0, 'Done');
+        data.forEach(row => row.splice(1, 0, 'false'));
+      } else if (doneColumnIndex !== 1) {
+        const doneHeader = header.splice(doneColumnIndex, 1)[0];
+        header.splice(1, 0, doneHeader);
+        data.forEach(row => {
+          const doneCell = row.splice(doneColumnIndex, 1)[0];
+          row.splice(1, 0, doneCell);
         });
       }
       
@@ -344,6 +379,7 @@
       const date = new Date();
       const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
       newRow.unshift(formattedDate);
+      newRow.splice(1, 0, 'false');
 
       data.unshift(newRow);
       inputs.forEach(input => input.value = '');
