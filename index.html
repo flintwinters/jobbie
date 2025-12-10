@@ -26,7 +26,6 @@
     td{background:#1e1e1e;color:#e6e6e6}
     #addBtn{font-size:24px;width:32px;height:32px;line-height:0;padding:0;border-radius:50%}
     td.active{outline:2px solid #4da3ff;outline-offset:-2px;background:#2c2c2c}
-    td[contenteditable]:focus{background:#333}
     .add-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
     #newEntryContainer{display:flex;flex:1;gap:6px}
     #newEntryContainer input{flex:1;min-width:0;padding:6px;border:1px solid #444;border-radius:4px;background:#2a2a2a;color:#e6e6e6}
@@ -158,6 +157,22 @@
     let data = [];
     let header = null;
 
+    function createCellContent(cellValue) {
+      const tdContent = document.createTextNode(cellValue ?? '');
+      try {
+        const url = new URL(cellValue);
+        if (url.protocol === 'http:' || url.protocol === 'https:') {
+          const a = document.createElement('a');
+          a.href = cellValue;
+          a.target = ' _blank';
+          a.rel = 'noopener noreferrer';
+          a.appendChild(tdContent);
+          return a;
+        }
+      } catch (_) { /* not a URL */ }
+      return tdContent;
+    }
+
     function render(){
       if(!data.length && !header){
         table.hidden = true; drop.style.display = 'block'; return;
@@ -214,7 +229,7 @@
         const rn = document.createElement('td'); rn.className = 'row-number'; rn.textContent = r+1; tr.appendChild(rn);
         for(let c=0;c<cols;c++){
           const td = document.createElement('td');
-          td.textContent = data[r][c] ?? '';
+          td.appendChild(createCellContent(data[r][c]));
           td.dataset.r = r;
           td.dataset.c = c;
           tr.appendChild(td);
@@ -316,18 +331,20 @@
         const td = e.target;
         if (td.tagName !== 'TD' || !td.hasAttribute('data-r')) return;
 
-        if(td.contentEditable === 'true') {
-            td.contentEditable = false;
-            if (editingCell === td) editingCell = null;
-            if (isCancelling) { isCancelling = false; return; }
-
-            const r = Number(td.dataset.r);
-            if (r >= 0) {
+        // If we are blurring from an input inside an editing cell, handle saving
+        if (editingCell === td && !isCancelling) {
+            const input = td.querySelector('input[type="text"]');
+            if (input) {
+                const r = Number(td.dataset.r);
                 const c = Number(td.dataset.c);
-                if(!data[r]) data[r] = [];
-                data[r][c] = td.textContent;
+                if (!data[r]) data[r] = [];
+                data[r][c] = input.value;
+                td.innerHTML = '';
+                td.appendChild(createCellContent(data[r][c]));
+                editingCell = null;
             }
         }
+        isCancelling = false;
     }, true);
 
     document.addEventListener('click', e => {
@@ -338,25 +355,30 @@
 
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && editingCell) {
+          e.preventDefault();
           isCancelling = true;
-          editingCell.textContent = originalCellValue;
-          editingCell.blur(); // Triggers blur listener
+          editingCell.innerHTML = '';
+          editingCell.appendChild(createCellContent(originalCellValue));
+          editingCell = null;
+          activeCell.focus(); 
           return;
       }
 
       if (editingCell && e.key === 'Enter') {
           e.preventDefault();
           // Save changes on Enter
+          const input = editingCell.querySelector('input[type="text"]');
+          const newValue = input ? input.value : originalCellValue;
           const r = Number(editingCell.dataset.r);
           const c = Number(editingCell.dataset.c);
           if (r >= 0) { // Data row
               if(!data[r]) data[r] = [];
-              data[r][c] = editingCell.textContent;
+              data[r][c] = newValue;
           }
-          editingCell.contentEditable = false;
-          editingCell.classList.remove('active');
-          setActiveCell(editingCell); // Re-activate the cell after saving, but not in edit mode
+          editingCell.innerHTML = '';
+          editingCell.appendChild(createCellContent(newValue));
           editingCell = null;
+          activeCell.focus();
           return;
       }
 
@@ -364,15 +386,20 @@
           e.preventDefault();
           editingCell = activeCell;
           originalCellValue = editingCell.textContent;
-          editingCell.contentEditable = true;
-          editingCell.focus();
-          const range = document.createRange();
-          range.selectNodeContents(editingCell);
-      
-          range.collapse(false);
-          const sel = window.getSelection();
-          sel.removeAllRanges();
-          sel.addRange(range);
+          editingCell.innerHTML = '';
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.value = originalCellValue;
+          input.style.width = '100%';
+          input.style.boxSizing = 'border-box';
+          input.style.border = 'none';
+          input.style.background = '#333';
+          input.style.color = 'inherit';
+          input.style.font = 'inherit';
+          input.style.padding = 'inherit';
+          editingCell.appendChild(input);
+          input.focus();
+          input.select();
           return;
       }
 
@@ -402,13 +429,14 @@
         if (activeCell && !editingCell) {
             e.preventDefault();
             const text = e.clipboardData.getData('text/plain');
-            activeCell.textContent = text;
             
             const r = Number(activeCell.dataset.r);
             const c = Number(activeCell.dataset.c);
             if (r >= 0) {
                 if(!data[r]) data[r] = [];
                 data[r][c] = text;
+                activeCell.innerHTML = '';
+                activeCell.appendChild(createCellContent(text));
             }
         }
     });
