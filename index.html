@@ -369,6 +369,16 @@
     });
 
     document.addEventListener('keydown', e => {
+      if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          undo();
+          return;
+      }
+      if ((e.key === 'y' && (e.ctrlKey || e.metaKey)) || (e.key === 'Z' && (e.ctrlKey || e.metaKey) && e.shiftKey)) {
+          e.preventDefault();
+          redo();
+          return;
+      }
       if (e.key === 'Escape' && editingCell) {
           e.preventDefault();
           isCancelling = true;
