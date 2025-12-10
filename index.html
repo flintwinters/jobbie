@@ -67,12 +67,17 @@
       </div>
 
       <div class="table-wrap" id="tableWrap">
-        <div class="dropzone" id="drop">Drag & drop a CSV file here, or use the file chooser above.</div>
         <table id="table" role="table" aria-label="CSV table" hidden>
           <thead id="thead"></thead>
           <tbody id="tbody"></tbody>
         </table>
       </div>
+  <script>
+    const initialCSVData = "Name,Job Title,Company,Email\nJohn Doe,Software Engineer,Google,john.doe@google.com\nJane Smith,Product Manager,Microsoft,jane.smith@microsoft.com";
+    document.addEventListener('DOMContentLoaded', () => {
+      loadCSVText(initialCSVData);
+    });
+  </script>
     </div>
   </div>
 
@@ -115,8 +120,6 @@
       }).join(',')).join('\n');
     }
 
-    const fileInput = document.getElementById('file');
-    const sampleBtn = document.getElementById('sampleBtn');
     const table = document.getElementById('table');
     const thead = document.getElementById('thead');
     const tbody = document.getElementById('tbody');
@@ -124,9 +127,6 @@
     const newEntryContainer = document.getElementById('newEntryContainer');
     const downloadBtn = document.getElementById('downloadBtn');
     const addColumnBtn = document.getElementById('addColumnBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const hasHeaderCheckbox = document.getElementById('hasHeader');
-    const drop = document.getElementById('drop');
 
     thead.addEventListener('blur', e => {
       const el = e.target;
@@ -171,10 +171,7 @@
     }
 
     function render(){
-      if(!data.length && !header){
-        table.hidden = true; drop.style.display = 'block'; return;
-      }
-      drop.style.display = 'none'; table.hidden = false;
+      table.hidden = false;
       thead.innerHTML = '';
       tbody.innerHTML = '';
 
@@ -238,22 +235,10 @@
     function loadCSVText(text){
       const rows = parseCSV(text);
       if(rows.length === 0) { data = []; header = null; render(); return; }
-      if(hasHeaderCheckbox.checked){ header = rows[0]; data = rows.slice(1); } else { header = null; data = rows; }
+      // hasHeaderCheckbox is removed, so always assume there is a header
+      header = rows[0]; data = rows.slice(1);
       render();
     }
-
-    fileInput.addEventListener('change', e => {
-      const f = fileInput.files[0];
-      if(!f) return;
-      const reader = new FileReader();
-      reader.onload = ev => { loadCSVText(ev.target.result); }
-      reader.readAsText(f);
-    });
-
-    sampleBtn.addEventListener('click', ()=>{
-      const sample = 'First Name,Last Name,Email,Score\nAlice,Smith,alice@example.com,95\nBob,Jones,bob@example.com,82\n"Charlie, Jr.",Brown,charlie@example.com,78';
-      loadCSVText(sample);
-    });
 
     addBtn.addEventListener('click', ()=>{
       const inputs = Array.from(newEntryContainer.querySelectorAll('input'));
@@ -287,27 +272,7 @@
     });
 
 
-    clearBtn.addEventListener('click', ()=>{
-      if(!confirm('Clear loaded data?')) return;
-      data = []; header = null; render();
-    });
 
-    // Drag and drop
-    ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.style.borderColor = '#bbb'; }));
-    ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.style.borderColor = '#ddd'; }));
-    drop.addEventListener('drop', e => {
-      const f = e.dataTransfer.files && e.dataTransfer.files[0];
-      if(!f) return;
-      const reader = new FileReader();
-      reader.onload = ev => loadCSVText(ev.target.result);
-      reader.readAsText(f);
-    });
-
-    // allow pressing Enter in add input to add
-    newEntryContainer.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); addBtn.click(); } });
-
-    // initialize empty render
-    render();
     
     // --- Spreadsheet QoL hotkeys ---
     let activeCell = null;
