@@ -244,7 +244,11 @@
       for(let c=0;c<cols;c++){
         const input = document.createElement('input');
         input.type = 'text';
-        input.placeholder = header ? (header[c] ?? `Column ${c+1}`) : `Column ${c+1}`;
+        const columnName = header ? (header[c] ?? `Column ${c+1}`) : `Column ${c+1}`;
+        input.placeholder = columnName;
+        if (columnName === 'Date') {
+          input.disabled = true;
+        }
         newEntryContainer.appendChild(input);
       }
 
@@ -296,20 +300,33 @@
     function loadCSVText(text){
       const rows = parseCSV(text);
       if(rows.length === 0) { data = []; header = null; render(); return; }
-      // hasHeaderCheckbox is removed, so always assume there is a header
-      header = rows[0]; data = rows.slice(1);
+      header = rows[0];
+      data = rows.slice(1);
+
+      if (!header.includes('Date')) {
+        header.push('Date');
+        data.forEach(row => row.push(''));
+      }
+      
       saveState();
       render();
     }
 
     addBtn.addEventListener('click', ()=>{
-      const inputs = Array.from(newEntryContainer.querySelectorAll('input'));
+      const inputs = Array.from(newEntryContainer.querySelectorAll('input:not([disabled])'));
       const newRow = inputs.map(input => input.value.trim());
 
       // check if all inputs are empty
       if(newRow.every(val => val === '')){
         alert('Please enter data into at least one cell for the new row.');
         return;
+      }
+
+      const date = new Date();
+      const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
+      const dateColumnIndex = header.indexOf('Date');
+      if (dateColumnIndex !== -1) {
+        newRow.splice(dateColumnIndex, 0, formattedDate);
       }
 
       data.unshift(newRow);
