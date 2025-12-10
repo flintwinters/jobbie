@@ -45,6 +45,10 @@ To run this application on your local machine, follow these steps:
     ```
     This will start the server, typically on `http://0.0.0.0:28889`.
 
+    **Customizing the Port**: To change the port, modify the `PORT` variable in `main.py`.
+
 4.  **Access the Application**:
 
     Open your web browser and navigate to `http://localhost:28889`. The backend server will serve the `index.html` file, and the application will be ready for use.
+
+    **Customizing the Backend URL (if frontend is not served by backend)**: If you're hosting the frontend separately, modify the `BACKEND_URL` constant in `index.html` to match your backend server's address and port.
