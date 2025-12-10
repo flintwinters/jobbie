@@ -1,8 +1,11 @@
 from fastapi import FastAPI, Request, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import uvicorn
+import requests
+from bs4 import BeautifulSoup
+import urllib.parse
 
 app = FastAPI()
 
@@ -30,6 +33,29 @@ async def save_csv(request: Request):
     with open(CSV_FILE, "wb") as f:
         f.write(data)
     return {"message": "CSV file saved successfully."}
+
+@app.get("/api/link-preview")
+async def link_preview(url: str):
+    try:
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        title = soup.find('title').text if soup.find('title') else ''
+        
+        favicon_link = soup.find("link", rel="shortcut icon")
+        if not favicon_link:
+            favicon_link = soup.find("link", rel="icon")
+
+        favicon_url = ''
+        if favicon_link:
+            favicon_url = favicon_link.get('href', '')
+            if not urllib.parse.urlparse(favicon_url).scheme:
+                favicon_url = urllib.parse.urljoin(url, favicon_url)
+
+        return JSONResponse({"title": title, "favicon": favicon_url})
+    except requests.RequestException:
+        return JSONResponse({"title": "", "favicon": ""}, status_code=400)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

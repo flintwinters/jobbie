@@ -42,6 +42,8 @@
     .checkbox-column{width:4em;min-width:4em;text-align:center;background:#1e1e1e;padding:0;}
     .checkbox-column label{display:flex;align-items:center;justify-content:center;width:100%;height:100%;cursor:pointer;}
     .checkbox-column input[type="checkbox"]{width:1.2em;height:1.2em;cursor:pointer;}
+    .link-cell { display: flex; align-items: center; gap: 6px; }
+    .link-cell img { width: 16px; height: 16px; }
 
 
     @media (max-width:640px){.wrap{flex-direction:column}}
@@ -231,18 +233,34 @@
     let header = null;
 
     function createCellContent(cellValue) {
-      const tdContent = document.createTextNode(cellValue ?? '');
       try {
         const url = new URL(cellValue);
         if (url.protocol === 'http:' || url.protocol === 'https:') {
-          const a = document.createElement('a');
-          a.href = cellValue;
-          a.target = ' _blank';
-          a.rel = 'noopener noreferrer';
-          a.appendChild(tdContent);
-          return a;
+          const container = document.createElement('div');
+          container.className = 'link-cell';
+          const favicon = document.createElement('img');
+          favicon.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'; // transparent pixel
+          const link = document.createElement('a');
+          link.href = cellValue;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.textContent = cellValue;
+          container.appendChild(favicon);
+          container.appendChild(link);
+
+          fetch(`http://localhost:8000/api/link-preview?url=${encodeURIComponent(cellValue)}`)
+            .then(response => response.json())
+            .then(preview => {
+              favicon.src = preview.favicon || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+              link.textContent = preview.title || cellValue;
+            })
+            .catch(() => {}); // ignore errors, keep original link
+
+          return container;
         }
       } catch (_) { /* not a URL */ }
+
+      const tdContent = document.createTextNode(cellValue ?? '');
       return tdContent;
     }
 
