@@ -20,7 +20,9 @@ CSV_FILE = "data.csv"
 async def get_csv():
     if not os.path.exists(CSV_FILE):
         return Response(status_code=404, content="CSV file not found.")
-    return FileResponse(CSV_FILE, media_type="text/csv")
+    with open(CSV_FILE, "r") as f:
+        content = f.read()
+    return Response(content=content, media_type="text/csv")
 
 @app.post("/api/csv")
 async def save_csv(request: Request):
