@@ -26,7 +26,7 @@ CSV_FILE = "data.csv"
 async def serve_index():
     return FileResponse('index.html')
 
-@app.get("/api/csv")
+@app.get("/jobbie/api/csv")
 async def get_csv():
     if not os.path.exists(CSV_FILE):
         return Response(status_code=404, content="CSV file not found.")
@@ -34,14 +34,14 @@ async def get_csv():
         content = f.read()
     return Response(content=content, media_type="text/csv")
 
-@app.post("/api/csv")
+@app.post("/jobbie/api/csv")
 async def save_csv(request: Request):
     data = await request.body()
     with open(CSV_FILE, "wb") as f:
         f.write(data)
     return {"message": "CSV file saved successfully."}
 
-@app.get("/api/link-preview")
+@app.get("/jobbie/api/link-preview")
 async def link_preview(url: str):
     try:
         # Use a standard user-agent to avoid being blocked
@@ -58,13 +58,13 @@ async def link_preview(url: str):
             # Choose the first icon found
             favicon_url = icons[0].url
 
-        proxied_favicon_url = f"/api/favicon?url={urllib.parse.quote(favicon_url)}" if favicon_url else ""
+        proxied_favicon_url = f"/jobbie/api/favicon?url={urllib.parse.quote(favicon_url)}" if favicon_url else ""
         return JSONResponse({"title": title, "favicon": proxied_favicon_url})
     except Exception as e:
         print(f"Error getting link preview for {url}: {e}")
         return JSONResponse({"title": "", "favicon": ""}, status_code=400)
 
-@app.get("/api/favicon")
+@app.get("/jobbie/api/favicon")
 async def favicon_proxy(url: str):
     print(f"Proxying favicon from: {url}")
     try:
