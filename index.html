@@ -251,7 +251,9 @@
           fetch(`http://localhost:8000/api/link-preview?url=${encodeURIComponent(cellValue)}`)
             .then(response => response.json())
             .then(preview => {
-              favicon.src = preview.favicon || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+              if (preview.favicon) {
+                favicon.src = `http://localhost:8000${preview.favicon}`;
+              }
               link.textContent = preview.title || cellValue;
             })
             .catch(() => {}); // ignore errors, keep original link
