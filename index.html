@@ -51,6 +51,8 @@
     <div class="controls">
     </div>
     <div style="margin-left:auto" class="actions">
+      <button id="undoBtn" disabled>Undo</button>
+      <button id="redoBtn" disabled>Redo</button>
       <button id="downloadBtn">Download CSV</button>
       <button id="addColumnBtn">Add Column</button>
     </div>
@@ -127,6 +129,51 @@
     const newEntryContainer = document.getElementById('newEntryContainer');
     const downloadBtn = document.getElementById('downloadBtn');
     const addColumnBtn = document.getElementById('addColumnBtn');
+    const undoBtn = document.getElementById('undoBtn');
+    const redoBtn = document.getElementById('redoBtn');
+
+    let history = [];
+    let historyIndex = -1;
+
+    function saveState() {
+      // Clear the "redo" history if we're making a new change after undoing
+      if (historyIndex < history.length - 1) {
+        history = history.slice(0, historyIndex + 1);
+      }
+      history.push(JSON.parse(JSON.stringify({ data, header })));
+      historyIndex++;
+      updateUndoRedoButtons();
+    }
+
+    function updateUndoRedoButtons() {
+      undoBtn.disabled = historyIndex <= 0;
+      redoBtn.disabled = historyIndex >= history.length - 1;
+    }
+
+    function undo() {
+      if (historyIndex > 0) {
+        historyIndex--;
+        const state = JSON.parse(JSON.stringify(history[historyIndex]));
+        data = state.data;
+        header = state.header;
+        render();
+        updateUndoRedoButtons();
+      }
+    }
+
+    function redo() {
+      if (historyIndex < history.length - 1) {
+        historyIndex++;
+        const state = JSON.parse(JSON.stringify(history[historyIndex]));
+        data = state.data;
+        header = state.header;
+        render();
+        updateUndoRedoButtons();
+      }
+    }
+
+    undoBtn.addEventListener('click', undo);
+    redoBtn.addEventListener('click', redo);
 
     thead.addEventListener('blur', e => {
       const el = e.target;
@@ -136,6 +183,7 @@
         const newName = el.textContent;
         if(header && header[c] !== newName){
           header[c] = newName;
+          saveState();
           render();
         }
       }
@@ -147,6 +195,7 @@
         const c = Number(th.dataset.c);
         header.splice(c, 1);
         data.forEach(row => row.splice(c, 1));
+        saveState();
         render();
       }
     });
@@ -237,6 +286,7 @@
       if(rows.length === 0) { data = []; header = null; render(); return; }
       // hasHeaderCheckbox is removed, so always assume there is a header
       header = rows[0]; data = rows.slice(1);
+      saveState();
       render();
     }
 
@@ -252,6 +302,7 @@
 
       data.unshift(newRow);
       inputs.forEach(input => input.value = '');
+      saveState();
       render();
     });
 
@@ -268,6 +319,7 @@
       const newColName = `Column ${header.length + 1}`;
       header.push(newColName);
       data.forEach(row => row.push(''));
+      saveState();
       render();
     });
 
@@ -304,6 +356,7 @@
                 td.innerHTML = '';
                 td.appendChild(createCellContent(data[r][c]));
                 editingCell = null;
+                saveState();
             }
         }
         isCancelling = false;
@@ -341,6 +394,7 @@
           editingCell.appendChild(createCellContent(newValue));
           editingCell = null;
           activeCell.focus();
+          saveState();
           return;
       }
 
@@ -399,6 +453,7 @@
                 data[r][c] = text;
                 activeCell.innerHTML = '';
                 activeCell.appendChild(createCellContent(text));
+                saveState();
             }
         }
     });
