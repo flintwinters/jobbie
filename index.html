@@ -19,7 +19,10 @@
     .table-wrap{background:#202020;border:1px solid #333;border-radius:6px;padding:10px;overflow:auto;max-height:70vh}
     table{border-collapse:collapse;width:100%;min-width:480px;table-layout:fixed}
     th,td{border:1px solid #333;padding:4px 6px;text-align:left;font-size:13px}
-    th{background:#2a2a2a;position:sticky;top:0;z-index:2;color:#ccc}
+    th{background:#2a2a2a;position:sticky;top:0;z-index:2;color:#ccc;position:relative}
+    .delete-col-btn{position:absolute;right:4px;top:50%;transform:translateY(-50%);cursor:pointer;color:#ff6b6b;font-size:14px;padding:2px 4px;border-radius:4px;line-height:1;background:rgba(0,0,0,0.1)}
+    .delete-col-btn:hover{background:#c14444;color:#fff}
+    .th-inner{flex-grow:1;padding:4px 6px}
     td{background:#1e1e1e;color:#e6e6e6}
     td.active{outline:2px solid #4da3ff;outline-offset:-2px;background:#2c2c2c}
     td[contenteditable]:focus{background:#333}
@@ -52,7 +55,6 @@
     <div style="margin-left:auto" class="actions">
       <button id="downloadBtn">Download CSV</button>
       <button id="addColumnBtn">Add Column</button>
-      <button id="deleteColumnBtn">Delete Column</button>
       <button id="clearBtn">Clear</button>
     </div>
   </div>
@@ -125,10 +127,32 @@
     const newEntryContainer = document.getElementById('newEntryContainer');
     const downloadBtn = document.getElementById('downloadBtn');
     const addColumnBtn = document.getElementById('addColumnBtn');
-    const deleteColumnBtn = document.getElementById('deleteColumnBtn');
     const clearBtn = document.getElementById('clearBtn');
     const hasHeaderCheckbox = document.getElementById('hasHeader');
     const drop = document.getElementById('drop');
+
+    thead.addEventListener('blur', e => {
+      const el = e.target;
+      if(el.classList.contains('th-inner')){
+        const th = el.parentElement;
+        const c = Number(th.dataset.c);
+        const newName = el.textContent;
+        if(header && header[c] !== newName){
+          header[c] = newName;
+          render();
+        }
+      }
+    }, true);
+
+    thead.addEventListener('click', e => {
+      if(e.target.classList.contains('delete-col-btn')){
+        const th = e.target.parentElement;
+        const c = Number(th.dataset.c);
+        header.splice(c, 1);
+        data.forEach(row => row.splice(c, 1));
+        render();
+      }
+    });
 
     let data = [];
     let header = null;
@@ -157,7 +181,21 @@
         const tr = document.createElement('tr');
         const thRowNum = document.createElement('th'); thRowNum.textContent = '#'; tr.appendChild(thRowNum);
         for(let c=0;c<cols;c++){
-          const th = document.createElement('th'); th.textContent = header[c] ?? ('Column ' + (c+1)); tr.appendChild(th);
+          const th = document.createElement('th');
+          th.dataset.c = c;
+
+          const inner = document.createElement('div');
+          inner.className = 'th-inner';
+          inner.contentEditable = 'true';
+          inner.textContent = header[c] ?? ('');
+          th.appendChild(inner);
+
+          const deleteBtn = document.createElement('span');
+          deleteBtn.className = 'delete-col-btn';
+          deleteBtn.textContent = '🗑️';
+          th.appendChild(deleteBtn);
+          
+          tr.appendChild(th);
         }
         thead.appendChild(tr);
       } else {
@@ -228,28 +266,13 @@
     });
 
     addColumnBtn.addEventListener('click', ()=>{
-      const colName = prompt('Enter new column name:');
-      if(colName){
-        if(!header) header = [];
-        header.push(colName);
-        data.forEach(row => row.push(''));
-        render();
-      }
+      if(!header) header = [];
+      const newColName = `Column ${header.length + 1}`;
+      header.push(newColName);
+      data.forEach(row => row.push(''));
+      render();
     });
 
-    deleteColumnBtn.addEventListener('click', ()=>{
-      const colName = prompt('Enter column name to delete:');
-      if(colName && header){
-        const colIndex = header.indexOf(colName);
-        if(colIndex > -1){
-          header.splice(colIndex, 1);
-          data.forEach(row => row.splice(colIndex, 1));
-          render();
-        } else {
-          alert('Column not found.');
-        }
-      }
-    });
 
     clearBtn.addEventListener('click', ()=>{
       if(!confirm('Clear loaded data?')) return;
