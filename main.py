@@ -44,26 +44,29 @@ async def link_preview(url: str):
         title = soup.find('title').text if soup.find('title') else ''
         
         favicon_url = ''
-        favicon_link = soup.find("link", rel="shortcut icon")
-        if not favicon_link:
-            favicon_link = soup.find("link", rel="icon")
-
-        if favicon_link:
-            favicon_url = favicon_link.get('href', '')
-            if not urllib.parse.urlparse(favicon_url).scheme:
-                favicon_url = urllib.parse.urljoin(url, favicon_url)
+        icon_links = soup.find_all("link", rel=lambda rel: rel and 'icon' in rel)
+        
+        if icon_links:
+            # Prioritize certain icon types
+            for rel_type in ["apple-touch-icon", "shortcut icon", "icon"]:
+                for link in icon_links:
+                    if rel_type in link.get('rel', []):
+                        favicon_url = link.get('href', '')
+                        if not urllib.parse.urlparse(favicon_url).scheme:
+                            favicon_url = urllib.parse.urljoin(url, favicon_url)
+                        break
+                if favicon_url:
+                    break
         
         if not favicon_url:
             # Check for default favicon.ico
             default_favicon_url = urllib.parse.urljoin(url, '/favicon.ico')
             try:
-                # Use stream=True to avoid downloading the whole file if it's large
-                # and just check headers
                 fav_res = requests.head(default_favicon_url, timeout=2)
                 if fav_res.status_code == 200 and 'image' in fav_res.headers.get('Content-Type', ''):
                      favicon_url = default_favicon_url
             except requests.RequestException:
-                pass # Ignore if /favicon.ico doesn't exist
+                pass
 
         proxied_favicon_url = f"/api/favicon?url={urllib.parse.quote(favicon_url)}" if favicon_url else ""
         return JSONResponse({"title": title, "favicon": proxied_favicon_url})
