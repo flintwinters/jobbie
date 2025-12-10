@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Spreadsheet CSV Viewer — Single File SPA</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial;color:#e6e6e6;background:#1a1a1a;}
+    body{margin:0;padding:18px;background:#1a1a1a;color:#e6e6e6}
+    header{display:flex;gap:12px;align-items:center;margin-bottom:14px}
+    h1{font-size:18px;margin:0}
+    .controls{display:flex;gap:8px;align-items:center}
+    input[type=file]{display:inline-block;color:#e6e6e6}
+    button{padding:6px 10px;border:1px solid #444;background:#2a2a2a;color:#e6e6e6;border-radius:6px;cursor:pointer}
+    button:active{transform:translateY(1px)}
+    label{font-size:13px}
+    .wrap{display:flex;gap:14px}
+    .left{flex:1;min-width:280px}
+    .table-wrap{background:#202020;border:1px solid #333;border-radius:6px;padding:10px;overflow:auto;max-height:70vh}
+    table{border-collapse:collapse;width:100%;min-width:480px;table-layout:fixed}
+    th,td{border:1px solid #333;padding:4px 6px;text-align:left;font-size:13px}
+    th{background:#2a2a2a;position:sticky;top:0;z-index:2;color:#ccc}
+    td{background:#1e1e1e;color:#e6e6e6}
+    td.active{outline:2px solid #4da3ff;outline-offset:-2px;background:#2c2c2c}
+    td[contenteditable]:focus{background:#333}
+    .add-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+    .add-row input[type=text]{flex:1;padding:6px;border:1px solid #444;border-radius:4px;background:#2a2a2a;color:#e6e6e6}
+    .meta{font-size:12px;color:#aaa}
+    .small{font-size:12px;color:#aaa}
+    .actions{display:flex;gap:8px}
+    .download-link{display:inline-block;padding:6px 10px;border-radius:6px;border:1px solid #444;background:#2a2a2a;text-decoration:none;color:#e6e6e6}
+    .topbar{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+    .dropzone{padding:8px;border:2px dashed #444;border-radius:6px;text-align:center;color:#777}
+    .row-number{width:44px;text-align:right;color:#888;font-size:12px;background:#1e1e1e}
+    @media (max-width:640px){.wrap{flex-direction:column}}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Spreadsheet CSV Viewer</h1>
+    <div class="small meta">Single-file SPA — load a CSV and add a new entry to the top</div>
+  </header>
+
+  <div class="topbar">
+    <div class="controls">
+      <input id="file" type="file" accept=".csv" />
+      <button id="sampleBtn">Load sample CSV</button>
+      <label style="display:flex;align-items:center;gap:6px"><input id="hasHeader" type="checkbox" checked /> Header</label>
+    </div>
+    <div style="margin-left:auto" class="actions">
+      <button id="downloadBtn">Download CSV</button>
+      <button id="clearBtn">Clear</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="left">
+      <div class="add-row">
+        <div style="flex:1;display:flex;gap:6px;align-items:center">
+          <div class="row-number">Top</div>
+          <input id="newEntry" type="text" placeholder="Type new row values, comma-separated" />
+        </div>
+        <button id="addBtn">Add to top</button>
+      </div>
+
+      <div class="table-wrap" id="tableWrap">
+        <div class="dropzone" id="drop">Drag & drop a CSV file here, or use the file chooser above.</div>
+        <table id="table" role="table" aria-label="CSV table" hidden>
+          <thead id="thead"></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Basic CSV parser that handles quoted fields and commas inside quotes.
+    function parseCSV(text){
+      const rows = [];
+      let cur = '';
+      let row = [];
+      let i=0, inQuotes=false;
+      while(i < text.length){
+        const ch = text[i];
+        if(inQuotes){
+          if(ch === '"'){
+            if(text[i+1] === '"') { cur += '"'; i += 2; continue; } // escaped quote
+            inQuotes = false; i++; continue;
+          } else { cur += ch; i++; continue; }
+        }
+        if(ch === '"') { inQuotes = true; i++; continue; }
+        if(ch === ','){ row.push(cur); cur = ''; i++; continue; }
+        if(ch === '\r'){ i++; continue; }
+        if(ch === '\n'){ row.push(cur); cur = ''; rows.push(row); row = []; i++; continue; }
+        cur += ch; i++;
+      }
+      // end
+      if(cur !== '' || row.length){ row.push(cur); rows.push(row); }
+      // handle trailing empty line
+      if(rows.length && rows[rows.length-1].length === 1 && rows[rows.length-1][0] === '') rows.pop();
+      return rows;
+    }
+
+    function toCSV(rows){
+      return rows.map(r => r.map(cell => {
+        if(cell == null) cell = '';
+        const s = String(cell);
+        if(s.includes('"') || s.includes(',') || s.includes('\n') || s.includes('\r')){
+          return '"' + s.replace(/"/g,'""') + '"';
+        }
+        return s;
+      }).join(',')).join('\n');
+    }
+
+    const fileInput = document.getElementById('file');
+    const sampleBtn = document.getElementById('sampleBtn');
+    const table = document.getElementById('table');
+    const thead = document.getElementById('thead');
+    const tbody = document.getElementById('tbody');
+    const addBtn = document.getElementById('addBtn');
+    const newEntry = document.getElementById('newEntry');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const hasHeaderCheckbox = document.getElementById('hasHeader');
+    const drop = document.getElementById('drop');
+
+    let data = [];
+    let header = null;
+
+    function render(){
+      if(!data.length && !header){
+        table.hidden = true; drop.style.display = 'block'; return;
+      }
+      drop.style.display = 'none'; table.hidden = false;
+      thead.innerHTML = '';
+      tbody.innerHTML = '';
+
+      // determine widest columns count
+      const cols = Math.max(...data.map(r=>r.length), header ? header.length : 0);
+
+      if(header){
+        const tr = document.createElement('tr');
+        const thRowNum = document.createElement('th'); thRowNum.textContent = '#'; tr.appendChild(thRowNum);
+        for(let c=0;c<cols;c++){
+          const th = document.createElement('th'); th.textContent = header[c] ?? ('Column ' + (c+1)); tr.appendChild(th);
+        }
+        thead.appendChild(tr);
+      } else {
+        const tr = document.createElement('tr');
+        const thRowNum = document.createElement('th'); thRowNum.textContent = '#'; tr.appendChild(thRowNum);
+        for(let c=0;c<cols;c++){
+          const th = document.createElement('th'); th.textContent = 'Col ' + (c+1); tr.appendChild(th);
+        }
+        thead.appendChild(tr);
+      }
+
+      // data rows
+      for(let r=0;r<data.length;r++){
+        const tr = document.createElement('tr');
+        const rn = document.createElement('td'); rn.className = 'row-number'; rn.textContent = r+1; tr.appendChild(rn);
+        for(let c=0;c<cols;c++){
+          const td = document.createElement('td');
+          td.textContent = data[r][c] ?? '';
+          td.dataset.r = r;
+          td.dataset.c = c;
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+    }
+
+    function loadCSVText(text){
+      const rows = parseCSV(text);
+      if(rows.length === 0) { data = []; header = null; render(); return; }
+      if(hasHeaderCheckbox.checked){ header = rows[0]; data = rows.slice(1); } else { header = null; data = rows; }
+      render();
+    }
+
+    fileInput.addEventListener('change', e => {
+      const f = fileInput.files[0];
+      if(!f) return;
+      const reader = new FileReader();
+      reader.onload = ev => { loadCSVText(ev.target.result); }
+      reader.readAsText(f);
+    });
+
+    sampleBtn.addEventListener('click', ()=>{
+      const sample = 'First Name,Last Name,Email,Score\nAlice,Smith,alice@example.com,95\nBob,Jones,bob@example.com,82\n"Charlie, Jr.",Brown,charlie@example.com,78';
+      loadCSVText(sample);
+    });
+
+    addBtn.addEventListener('click', ()=>{
+      const typed = newEntry.value.trim();
+      if(!typed) {
+        alert('Please type a comma-separated new row in the input field.');
+        return;
+      }
+      const newRow = parseCSV(typed + '\n')[0] || [];
+      data.unshift(newRow);
+      newEntry.value = '';
+      render();
+    });
+
+    downloadBtn.addEventListener('click', ()=>{
+      const rows = header ? [header, ...data] : data;
+      const csv = toCSV(rows);
+      const blob = new Blob([csv], {type: 'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'data.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+
+    clearBtn.addEventListener('click', ()=>{
+      if(!confirm('Clear loaded data?')) return;
+      data = []; header = null; render();
+    });
+
+    // Drag and drop
+    ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.style.borderColor = '#bbb'; }));
+    ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.style.borderColor = '#ddd'; }));
+    drop.addEventListener('drop', e => {
+      const f = e.dataTransfer.files && e.dataTransfer.files[0];
+      if(!f) return;
+      const reader = new FileReader();
+      reader.onload = ev => loadCSVText(ev.target.result);
+      reader.readAsText(f);
+    });
+
+    // allow pressing Enter in add input to add
+    newEntry.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); addBtn.click(); } });
+
+    // initialize empty render
+    render();
+    
+    // --- Spreadsheet QoL hotkeys ---
+    let activeCell = null;
+    let editingCell = null;
+    let originalCellValue = '';
+    let isCancelling = false;
+
+    function setActiveCell(td){
+      if(activeCell) activeCell.classList.remove('active');
+      activeCell = td;
+      if(td) {
+        td.classList.add('active');
+        td.focus();
+      }
+    }
+
+    tbody.addEventListener('blur', e => {
+        const td = e.target;
+        if (td.tagName !== 'TD' || !td.hasAttribute('data-r')) return;
+
+        if(td.contentEditable === 'true') {
+            td.contentEditable = false;
+            if (editingCell === td) editingCell = null;
+            if (isCancelling) { isCancelling = false; return; }
+
+            const r = Number(td.dataset.r);
+            if (r >= 0) {
+                const c = Number(td.dataset.c);
+                if(!data[r]) data[r] = [];
+                data[r][c] = td.textContent;
+            }
+        }
+    }, true);
+
+    document.addEventListener('click', e => {
+      if(e.target.tagName === 'TD' && e.target.dataset.c !== undefined && tbody.contains(e.target)){
+        setActiveCell(e.target);
+      }
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && editingCell) {
+          isCancelling = true;
+          editingCell.textContent = originalCellValue;
+          editingCell.blur(); // Triggers blur listener
+          return;
+      }
+
+      if (editingCell && e.key === 'Enter') {
+          e.preventDefault();
+          // Save changes on Enter
+          const r = Number(editingCell.dataset.r);
+          const c = Number(editingCell.dataset.c);
+          if (r >= 0) { // Data row
+              if(!data[r]) data[r] = [];
+              data[r][c] = editingCell.textContent;
+          }
+          editingCell.contentEditable = false;
+          editingCell.classList.remove('active');
+          setActiveCell(editingCell); // Re-activate the cell after saving, but not in edit mode
+          editingCell = null;
+          return;
+      }
+
+      if (!editingCell && activeCell && e.key === 'Enter') {
+          e.preventDefault();
+          editingCell = activeCell;
+          originalCellValue = editingCell.textContent;
+          editingCell.contentEditable = true;
+          editingCell.focus();
+          const range = document.createRange();
+          range.selectNodeContents(editingCell);
+      
+          range.collapse(false);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          return;
+      }
+
+      if (editingCell) return; // Don't navigate while editing
+      if (!activeCell) return;
+
+      const r = Number(activeCell.dataset.r);
+      const c = Number(activeCell.dataset.c);
+
+      let target = null;
+      if(e.key === 'ArrowDown'){ target = tbody.querySelector(`td[data-r="${r+1}"][data-c="${c}"]`); }
+      else if(e.key === 'ArrowUp'){ target = tbody.querySelector(`td[data-r="${r-1}"][data-c="${c}"]`); }
+      else if(e.key === 'ArrowRight'){ target = tbody.querySelector(`td[data-r="${r}"][data-c="${c+1}"]`); }
+      else if(e.key === 'ArrowLeft'){ target = tbody.querySelector(`td[data-r="${r}"][data-c="${c-1}"]`); }
+
+      if(target){ e.preventDefault(); setActiveCell(target); }
+    });
+
+    document.addEventListener('copy', e => {
+        if (activeCell && !editingCell) {
+            e.clipboardData.setData('text/plain', activeCell.textContent);
+            e.preventDefault();
+        }
+    });
+
+    document.addEventListener('paste', e => {
+        if (activeCell && !editingCell) {
+            e.preventDefault();
+            const text = e.clipboardData.getData('text/plain');
+            activeCell.textContent = text;
+            
+            const r = Number(activeCell.dataset.r);
+            const c = Number(activeCell.dataset.c);
+            if (r >= 0) {
+                if(!data[r]) data[r] = [];
+                data[r][c] = text;
+            }
+        }
+    });
+  </script>
+</body>
+</html>
