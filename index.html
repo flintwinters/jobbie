@@ -39,8 +39,6 @@
     .dropzone{padding:8px;border:2px dashed #444;border-radius:6px;text-align:center;color:#777}
     .row-number, th:first-child{width:3em;min-width:3em;text-align:center;color:#888;font-size:12px;background:#1e1e1e;padding:4px 0px;box-sizing:content-box}
     .date-column{width:12em;min-width:12em;text-align:center;color:#aaa;font-size:12px;font-family:monospace;background:#1e1e1e}
-    .delete-row-btn{cursor:pointer;color:#ff6b6b;font-size:14px;padding:2px 4px;border-radius:4px;line-height:1;background:rgba(0,0,0,0.1)}
-    .delete-row-btn:hover{background:#c14444;color:#fff}
 
     @media (max-width:640px){.wrap{flex-direction:column}}
   </style>
@@ -216,15 +214,6 @@
       }
     });
 
-    tbody.addEventListener('click', e => {
-      if (e.target.classList.contains('delete-row-btn')) {
-        const r = Number(e.target.dataset.r);
-        data.splice(r, 1);
-        saveState();
-        render();
-      }
-    });
-
     let data = [];
     let header = null;
 
@@ -267,13 +256,7 @@
 
       if(header){
         const tr = document.createElement('tr');
-        const thRowNum = document.createElement('th');
-        thRowNum.textContent = '#';
-        const deleteBtn = document.createElement('span');
-        deleteBtn.className = 'delete-row-btn';
-        deleteBtn.textContent = '🗑️';
-        thRowNum.appendChild(deleteBtn);
-        tr.appendChild(thRowNum);
+        const thRowNum = document.createElement('th'); thRowNum.textContent = '#'; tr.appendChild(thRowNum);
         for(let c=0;c<cols;c++){
           const th = document.createElement('th');
           th.dataset.c = c;
@@ -309,13 +292,7 @@
       // data rows
       for(let r=0;r<data.length;r++){
         const tr = document.createElement('tr');
-        const rn = document.createElement('td'); rn.className = 'row-number';
-        const deleteBtn = document.createElement('span');
-        deleteBtn.className = 'delete-row-btn';
-        deleteBtn.textContent = '🗑️';
-        deleteBtn.dataset.r = r;
-        rn.appendChild(deleteBtn);
-        tr.appendChild(rn);
+        const rn = document.createElement('td'); rn.className = 'row-number'; rn.textContent = r+1; tr.appendChild(rn);
         for(let c=0;c<cols;c++){
           const td = document.createElement('td');
           if (header[c] === 'Date') {
