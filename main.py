@@ -72,15 +72,17 @@ async def link_preview(url: str):
 
 @app.get("/api/favicon")
 async def favicon_proxy(url: str):
+    print(f"Proxying favicon from: {url}")
     try:
         response = requests.get(url, timeout=5, stream=True)
         response.raise_for_status()
         
-        # Check content type if possible, default to common image types
         content_type = response.headers.get('Content-Type', 'image/x-icon')
+        print(f"Favicon content type: {content_type}")
         
         return Response(content=response.content, media_type=content_type)
-    except requests.RequestException:
+    except requests.RequestException as e:
+        print(f"Error fetching favicon: {e}")
         return Response(status_code=404)
 
 
