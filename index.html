@@ -238,6 +238,7 @@
         if (url.protocol === 'http:' || url.protocol === 'https:') {
           const container = document.createElement('div');
           container.className = 'link-cell';
+          container.dataset.url = cellValue;
           const favicon = document.createElement('img');
           favicon.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'; // transparent pixel
           const link = document.createElement('a');
@@ -520,7 +521,8 @@
       if (!editingCell && activeCell && e.key === 'Enter') {
           e.preventDefault();
           editingCell = activeCell;
-          originalCellValue = editingCell.textContent;
+          const linkCell = editingCell.querySelector('.link-cell');
+          originalCellValue = linkCell ? linkCell.dataset.url : editingCell.textContent;
           editingCell.innerHTML = '';
           const input = document.createElement('input');
           input.type = 'text';
