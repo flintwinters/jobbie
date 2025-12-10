@@ -24,6 +24,8 @@
     td.active{outline:2px solid #4da3ff;outline-offset:-2px;background:#2c2c2c}
     td[contenteditable]:focus{background:#333}
     .add-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+    #newEntryContainer{display:flex;flex:1;gap:6px}
+    #newEntryContainer input{flex:1;min-width:0;padding:6px;border:1px solid #444;border-radius:4px;background:#2a2a2a;color:#e6e6e6}
     .add-row input[type=text]{flex:1;padding:6px;border:1px solid #444;border-radius:4px;background:#2a2a2a;color:#e6e6e6}
     .meta{font-size:12px;color:#aaa}
     .small{font-size:12px;color:#aaa}
@@ -58,7 +60,7 @@
       <div class="add-row">
         <div style="flex:1;display:flex;gap:6px;align-items:center">
           <div class="row-number">Top</div>
-          <input id="newEntry" type="text" placeholder="Type new row values, comma-separated" />
+          <div id="newEntryContainer"></div>
         </div>
         <button id="addBtn">Add to top</button>
       </div>
@@ -118,7 +120,7 @@
     const thead = document.getElementById('thead');
     const tbody = document.getElementById('tbody');
     const addBtn = document.getElementById('addBtn');
-    const newEntry = document.getElementById('newEntry');
+    const newEntryContainer = document.getElementById('newEntryContainer');
     const downloadBtn = document.getElementById('downloadBtn');
     const clearBtn = document.getElementById('clearBtn');
     const hasHeaderCheckbox = document.getElementById('hasHeader');
@@ -137,6 +139,15 @@
 
       // determine widest columns count
       const cols = Math.max(...data.map(r=>r.length), header ? header.length : 0);
+
+      // (re)render add row inputs
+      newEntryContainer.innerHTML = '';
+      for(let c=0;c<cols;c++){
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = header ? (header[c] ?? `Column ${c+1}`) : `Column ${c+1}`;
+        newEntryContainer.appendChild(input);
+      }
 
       if(header){
         const tr = document.createElement('tr');
@@ -190,14 +201,17 @@
     });
 
     addBtn.addEventListener('click', ()=>{
-      const typed = newEntry.value.trim();
-      if(!typed) {
-        alert('Please type a comma-separated new row in the input field.');
+      const inputs = Array.from(newEntryContainer.querySelectorAll('input'));
+      const newRow = inputs.map(input => input.value.trim());
+
+      // check if all inputs are empty
+      if(newRow.every(val => val === '')){
+        alert('Please enter data into at least one cell for the new row.');
         return;
       }
-      const newRow = parseCSV(typed + '\n')[0] || [];
+
       data.unshift(newRow);
-      newEntry.value = '';
+      inputs.forEach(input => input.value = '');
       render();
     });
 
@@ -226,7 +240,7 @@
     });
 
     // allow pressing Enter in add input to add
-    newEntry.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); addBtn.click(); } });
+    newEntryContainer.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); addBtn.click(); } });
 
     // initialize empty render
     render();
