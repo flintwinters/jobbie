@@ -38,6 +38,8 @@
     .topbar{display:flex;gap:12px;align-items:center;margin-bottom:10px}
     .dropzone{padding:8px;border:2px dashed #444;border-radius:6px;text-align:center;color:#777}
     .row-number, th:first-child{width:3em;min-width:3em;text-align:center;color:#888;font-size:12px;background:#1e1e1e;padding:4px 0px;box-sizing:content-box}
+    .date-column{width:12em;min-width:12em;text-align:center;color:#aaa;font-size:12px;font-family:monospace;background:#1e1e1e}
+
     @media (max-width:640px){.wrap{flex-direction:column}}
   </style>
 </head>
@@ -261,15 +263,20 @@
 
           const inner = document.createElement('div');
           inner.className = 'th-inner';
-          inner.contentEditable = 'true';
           inner.textContent = header[c] ?? ('');
-          th.appendChild(inner);
 
-          const deleteBtn = document.createElement('span');
-          deleteBtn.className = 'delete-col-btn';
-          deleteBtn.textContent = '🗑️';
-          th.appendChild(deleteBtn);
+          if (header[c] === 'Date') {
+            th.classList.add('date-column');
+            inner.contentEditable = 'false';
+          } else {
+            inner.contentEditable = 'true';
+            const deleteBtn = document.createElement('span');
+            deleteBtn.className = 'delete-col-btn';
+            deleteBtn.textContent = '🗑️';
+            th.appendChild(deleteBtn);
+          }
           
+          th.appendChild(inner);
           tr.appendChild(th);
         }
         thead.appendChild(tr);
@@ -288,6 +295,9 @@
         const rn = document.createElement('td'); rn.className = 'row-number'; rn.textContent = r+1; tr.appendChild(rn);
         for(let c=0;c<cols;c++){
           const td = document.createElement('td');
+          if (header[c] === 'Date') {
+            td.classList.add('date-column');
+          }
           td.appendChild(createCellContent(data[r][c]));
           td.dataset.r = r;
           td.dataset.c = c;
@@ -303,9 +313,18 @@
       header = rows[0];
       data = rows.slice(1);
 
-      if (!header.includes('Date')) {
-        header.push('Date');
-        data.forEach(row => row.push(''));
+      let dateColumnIndex = header.indexOf('Date');
+      if (dateColumnIndex === -1) {
+        header.unshift('Date');
+        data.forEach(row => row.unshift(''));
+      } else if (dateColumnIndex > 0) {
+        // Move date column to the beginning
+        const dateHeader = header.splice(dateColumnIndex, 1)[0];
+        header.unshift(dateHeader);
+        data.forEach(row => {
+          const dateCell = row.splice(dateColumnIndex, 1)[0];
+          row.unshift(dateCell);
+        });
       }
       
       saveState();
@@ -324,10 +343,7 @@
 
       const date = new Date();
       const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
-      const dateColumnIndex = header.indexOf('Date');
-      if (dateColumnIndex !== -1) {
-        newRow.splice(dateColumnIndex, 0, formattedDate);
-      }
+      newRow.unshift(formattedDate);
 
       data.unshift(newRow);
       inputs.forEach(input => input.value = '');
