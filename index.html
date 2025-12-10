@@ -51,6 +51,8 @@
     </div>
     <div style="margin-left:auto" class="actions">
       <button id="downloadBtn">Download CSV</button>
+      <button id="addColumnBtn">Add Column</button>
+      <button id="deleteColumnBtn">Delete Column</button>
       <button id="clearBtn">Clear</button>
     </div>
   </div>
@@ -122,6 +124,8 @@
     const addBtn = document.getElementById('addBtn');
     const newEntryContainer = document.getElementById('newEntryContainer');
     const downloadBtn = document.getElementById('downloadBtn');
+    const addColumnBtn = document.getElementById('addColumnBtn');
+    const deleteColumnBtn = document.getElementById('deleteColumnBtn');
     const clearBtn = document.getElementById('clearBtn');
     const hasHeaderCheckbox = document.getElementById('hasHeader');
     const drop = document.getElementById('drop');
@@ -221,6 +225,30 @@
       const blob = new Blob([csv], {type: 'text/csv'});
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = 'data.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+
+    addColumnBtn.addEventListener('click', ()=>{
+      const colName = prompt('Enter new column name:');
+      if(colName){
+        if(!header) header = [];
+        header.push(colName);
+        data.forEach(row => row.push(''));
+        render();
+      }
+    });
+
+    deleteColumnBtn.addEventListener('click', ()=>{
+      const colName = prompt('Enter column name to delete:');
+      if(colName && header){
+        const colIndex = header.indexOf(colName);
+        if(colIndex > -1){
+          header.splice(colIndex, 1);
+          data.forEach(row => row.splice(colIndex, 1));
+          render();
+        } else {
+          alert('Column not found.');
+        }
+      }
     });
 
     clearBtn.addEventListener('click', ()=>{
