@@ -83,16 +83,14 @@
     </div>
   </div>
   <script>
+    const BACKEND_URL = 'http://localhost:28889';
+
     document.addEventListener('DOMContentLoaded', () => {
       fetch(`${BACKEND_URL}/api/csv`)
         .then(response => response.text())
         .then(text => loadCSVText(text))
         .catch(error => console.error('Error fetching CSV:', error));
     });
-  </script>
-  <script>
-  <script>
-    const BACKEND_URL = 'http://localhost:28889';
 
     // Basic CSV parser that handles quoted fields and commas inside quotes.
     function parseCSV(text){
@@ -258,7 +256,7 @@
               if (preview.favicon) {
                 favicon.src = `${BACKEND_URL}${preview.favicon}`;
               link.textContent = preview.title || cellValue;
-            })
+            })})
             .catch((error) => {
               console.error('Error fetching link preview:', error);
             });
