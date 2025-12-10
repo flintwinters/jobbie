@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Spreadsheet CSV Viewer — Single File SPA</title>
+  <title>Jobbie</title>
   <style>
     :root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial;color:#e6e6e6;background:#1a1a1a;}
     body{margin:0;padding:18px;background:#1a1a1a;color:#e6e6e6}
@@ -51,8 +51,7 @@
 </head>
 <body>
   <header>
-    <h1>Spreadsheet CSV Viewer</h1>
-    <div class="small meta">Single-file SPA — load a CSV and add a new entry to the top</div>
+    <h1>Jobbie Applicator</h1>
   </header>
 
   <div class="topbar">
@@ -85,7 +84,7 @@
   </div>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      fetch('http://localhost:8000/api/csv')
+      fetch('http://localhost:28889/api/csv')
         .then(response => response.text())
         .then(text => loadCSVText(text))
         .catch(error => console.error('Error fetching CSV:', error));
