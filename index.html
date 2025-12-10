@@ -244,13 +244,13 @@
       // (re)render add row inputs
       newEntryContainer.innerHTML = '';
       for(let c=0;c<cols;c++){
+        const columnName = header ? (header[c] ?? `Column ${c+1}`) : `Column ${c+1}`;
+        if (columnName === 'Date') {
+          continue; 
+        }
         const input = document.createElement('input');
         input.type = 'text';
-        const columnName = header ? (header[c] ?? `Column ${c+1}`) : `Column ${c+1}`;
         input.placeholder = columnName;
-        if (columnName === 'Date') {
-          input.disabled = true;
-        }
         newEntryContainer.appendChild(input);
       }
 
