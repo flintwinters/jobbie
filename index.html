@@ -53,7 +53,6 @@
     <div style="margin-left:auto" class="actions">
       <button id="undoBtn" disabled>Undo</button>
       <button id="redoBtn" disabled>Redo</button>
-      <button id="downloadBtn">Download CSV</button>
       <button id="addColumnBtn">Add Column</button>
     </div>
   </div>
@@ -74,10 +73,11 @@
           <tbody id="tbody"></tbody>
         </table>
       </div>
-  <script>
-    const initialCSVData = "Name,Job Title,Company,Email\nJohn Doe,Software Engineer,Google,john.doe@google.com\nJane Smith,Product Manager,Microsoft,jane.smith@microsoft.com";
     document.addEventListener('DOMContentLoaded', () => {
-      loadCSVText(initialCSVData);
+      fetch('/api/csv')
+        .then(response => response.text())
+        .then(text => loadCSVText(text))
+        .catch(error => console.error('Error fetching CSV:', error));
     });
   </script>
     </div>
@@ -127,7 +127,6 @@
     const tbody = document.getElementById('tbody');
     const addBtn = document.getElementById('addBtn');
     const newEntryContainer = document.getElementById('newEntryContainer');
-    const downloadBtn = document.getElementById('downloadBtn');
     const addColumnBtn = document.getElementById('addColumnBtn');
     const undoBtn = document.getElementById('undoBtn');
     const redoBtn = document.getElementById('redoBtn');
@@ -135,14 +134,24 @@
     let history = [];
     let historyIndex = -1;
 
-    function saveState() {
+    function saveState(fromUndoRedo = false) {
       // Clear the "redo" history if we're making a new change after undoing
       if (historyIndex < history.length - 1) {
         history = history.slice(0, historyIndex + 1);
       }
-      history.push(JSON.parse(JSON.stringify({ data, header })));
+      const currentState = { data: JSON.parse(JSON.stringify(data)), header: JSON.parse(JSON.stringify(header)) };
+      history.push(currentState);
       historyIndex++;
       updateUndoRedoButtons();
+
+      if (!fromUndoRedo) {
+        const csv = toCSV(header ? [header, ...data] : data);
+        fetch('/api/csv', {
+          method: 'POST',
+          body: csv,
+          headers: { 'Content-Type': 'text/csv' }
+        }).catch(error => console.error('Error saving CSV:', error));
+      }
     }
 
     function updateUndoRedoButtons() {
@@ -153,24 +162,27 @@
     function undo() {
       if (historyIndex > 0) {
         historyIndex--;
-        const state = JSON.parse(JSON.stringify(history[historyIndex]));
-        data = state.data;
-        header = state.header;
+        const state = history[historyIndex];
+        data = JSON.parse(JSON.stringify(state.data));
+        header = JSON.parse(JSON.stringify(state.header));
         render();
         updateUndoRedoButtons();
+        saveState(true);
       }
     }
 
     function redo() {
       if (historyIndex < history.length - 1) {
         historyIndex++;
-        const state = JSON.parse(JSON.stringify(history[historyIndex]));
-        data = state.data;
-        header = state.header;
+        const state = history[historyIndex];
+        data = JSON.parse(JSON.stringify(state.data));
+        header = JSON.parse(JSON.stringify(state.header));
         render();
         updateUndoRedoButtons();
+        saveState(true);
       }
     }
+
 
     undoBtn.addEventListener('click', undo);
     redoBtn.addEventListener('click', redo);
@@ -306,13 +318,7 @@
       render();
     });
 
-    downloadBtn.addEventListener('click', ()=>{
-      const rows = header ? [header, ...data] : data;
-      const csv = toCSV(rows);
-      const blob = new Blob([csv], {type: 'text/csv'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = 'data.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    });
+
 
     addColumnBtn.addEventListener('click', ()=>{
       if(!header) header = [];
