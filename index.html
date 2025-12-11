@@ -208,16 +208,7 @@
       }
     }, true);
 
-    thead.addEventListener('click', e => {
-      if(e.target.classList.contains('delete-col-btn')){
-        const th = e.target.parentElement;
-        const c = Number(th.dataset.c);
-        header.splice(c, 1);
-        data.forEach(row => row.splice(c, 1));
-        saveState();
-        render();
-      }
-    });
+
 
     tbody.addEventListener('change', e => {
       if (e.target.type === 'checkbox') {
@@ -309,11 +300,6 @@
             inner.contentEditable = 'false';
           } else {
             inner.contentEditable = 'true';
-            const deleteBtn = document.createElement('span');
-            deleteBtn.className = 'delete-col-btn';
-            deleteBtn.textContent = '🗑️';
-            th.appendChild(deleteBtn);
-          }
           
           th.appendChild(inner);
           tr.appendChild(th);
