@@ -28,7 +28,8 @@
     #addBtn{font-size:24px;width:32px;height:32px;line-height:0;padding:0;border-radius:50%}
     td.active{outline:2px solid #4da3ff;outline-offset:-2px;background:#2c2c2c}
     .add-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
-    #newEntryContainer{display:flex;flex:1;gap:6px}
+    .new-entry-outer-container{flex:1;display:flex;gap:6px;align-items:center;overflow:hidden;}
+    #newEntryContainer{display:flex;flex:1;gap:6px;overflow-x:auto;padding-bottom:4px;min-width:0;}
     #newEntryContainer input{flex:1;min-width:0;padding:6px;border:1px solid #444;border-radius:4px;background:#2a2a2a;color:#e6e6e6}
     .add-row input[type=text]{flex:1;padding:6px;border:1px solid #444;border-radius:4px;background:#2a2a2a;color:#e6e6e6}
     .meta{font-size:12px;color:#aaa}
@@ -67,7 +68,7 @@
   <div class="wrap">
     <div class="left">
       <div class="add-row">
-        <div style="flex:1;display:flex;gap:6px;align-items:center">
+        <div class="new-entry-outer-container">
           <div class="row-number">Top</div>
           <div id="newEntryContainer"></div>
         </div>
