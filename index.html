@@ -46,6 +46,10 @@
     .link-cell { display: flex; align-items: center; gap: 6px; }
     .link-cell img { width: 16px; height: 16px; }
 
+    .status-applied { background-color: #5C5200; } /* Desaturated yellow */
+    .status-rejected { background-color: #660000; } /* Desaturated red */
+    .status-me { background-color: #004D66; } /* Desaturated light blue */
+
 
     @media (max-width:640px){.wrap{flex-direction:column}}
   </style>
@@ -390,7 +394,7 @@
       }
 
       const date = new Date();
-      const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
+      const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
       newRow.unshift(formattedDate);
       newRow.splice(1, 0, 'false');
 
