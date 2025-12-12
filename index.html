@@ -263,6 +263,20 @@
       return tdContent;
     }
 
+    function updateCellAppearance(td, cellValue) {
+      // Reset classes first
+      td.classList.remove('status-applied', 'status-rejected', 'status-me');
+
+      const cellText = String(cellValue).toLowerCase().trim();
+      if (cellText === 'applied') {
+        td.classList.add('status-applied');
+      } else if (cellText === 'rejected') {
+        td.classList.add('status-rejected');
+      } else if (cellText === 'me') {
+        td.classList.add('status-me');
+      }
+    }
+
     function render(){
       setActiveCell(null);
       table.hidden = false;
@@ -339,6 +353,7 @@
             continue;
           }
           td.appendChild(createCellContent(data[r][c]));
+          updateCellAppearance(td, data[r][c]);
           td.dataset.r = r;
           td.dataset.c = c;
           tr.appendChild(td);
@@ -458,6 +473,7 @@
                 data[r][c] = input.value;
                 td.innerHTML = '';
                 td.appendChild(createCellContent(data[r][c]));
+                updateCellAppearance(td, data[r][c]);
                 editingCell = null;
                 saveState();
             }
@@ -505,6 +521,7 @@
           }
           editingCell.innerHTML = '';
           editingCell.appendChild(createCellContent(newValue));
+          updateCellAppearance(editingCell, newValue);
           editingCell = null;
           activeCell.focus();
           saveState();
@@ -571,6 +588,7 @@
                 data[r][c] = text;
                 activeCell.innerHTML = '';
                 activeCell.appendChild(createCellContent(text));
+                updateCellAppearance(activeCell, text);
                 saveState();
             }
         }
