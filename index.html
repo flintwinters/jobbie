@@ -57,6 +57,7 @@
 <body>
   <header>
     <h1>Jobbie Applicator</h1>
+    <span id="movingAverage" class="meta"></span>
   </header>
 
   <div class="topbar">
@@ -277,11 +278,57 @@
       }
     }
 
+    function updateMovingAverage() {
+      const movingAverageEl = document.getElementById('movingAverage');
+      if (!movingAverageEl) return;
+
+      const dateColumnIndex = header ? header.indexOf('Date') : -1;
+      if (dateColumnIndex === -1 || data.length === 0) {
+        movingAverageEl.textContent = '';
+        return;
+      }
+
+      const now = new Date();
+      const weeklyCounts = {};
+
+      for (const row of data) {
+        const dateStr = row[dateColumnIndex];
+        if (!dateStr) continue;
+        
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) continue;
+
+        const startOfWeek = new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay());
+        startOfWeek.setHours(0, 0, 0, 0);
+        const weekKey = startOfWeek.toISOString().split('T')[0];
+
+        if (!weeklyCounts[weekKey]) {
+          weeklyCounts[weekKey] = 0;
+        }
+        weeklyCounts[weekKey]++;
+      }
+
+      const sortedWeeks = Object.keys(weeklyCounts).sort((a, b) => new Date(b) - new Date(a));
+      const recentWeeks = sortedWeeks.slice(0, 4);
+      
+      if (recentWeeks.length === 0) {
+        movingAverageEl.textContent = 'Avg apps per week: 0.0';
+        return;
+      }
+
+      const total = recentWeeks.reduce((acc, week) => acc + weeklyCounts[week], 0);
+      const avg = total / recentWeeks.length;
+
+      movingAverageEl.textContent = `Avg apps per week (last ${recentWeeks.length} weeks): ${avg.toFixed(1)}`;
+    }
+
     function render(){
       setActiveCell(null);
       table.hidden = false;
       thead.innerHTML = '';
       tbody.innerHTML = '';
+
+      updateMovingAverage();
 
       // determine widest columns count
       const cols = Math.max(...data.map(r=>r.length), header ? header.length : 0);
