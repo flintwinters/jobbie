@@ -43,6 +43,9 @@
     .link-cell { display: flex; align-items: center; gap: 6px; }
     .link-cell img { width: 16px; height: 16px; }
 
+    .job-title-column { width: 20em; font-size: 14px; }
+    .company-column { width: 15em; font-size: 14px; }
+
     .status-applied { background-color: #5C5200; } /* Desaturated yellow */
     .status-rejected { background-color: #660000; } /* Desaturated red */
     .status-me { background-color: #004D66; } /* Desaturated light blue */
@@ -345,6 +348,11 @@
           inner.className = 'th-inner';
           inner.textContent = header[c] ?? ('');
 
+          if ((header[c] || '').toLowerCase() === 'job title') {
+            th.classList.add('job-title-column');
+          } else if ((header[c] || '').toLowerCase() === 'company') {
+            th.classList.add('company-column');
+          }
           if (header[c] === 'Date') {
             th.classList.add('date-column');
             inner.contentEditable = 'false';
@@ -370,6 +378,11 @@
         const rn = document.createElement('td'); rn.className = 'row-number'; rn.textContent = r+1; tr.appendChild(rn);
         for(let c=0;c<cols;c++){
           const td = document.createElement('td');
+          if ((header[c] || '').toLowerCase() === 'job title') {
+            td.classList.add('job-title-column');
+          } else if ((header[c] || '').toLowerCase() === 'company') {
+            td.classList.add('company-column');
+          }
           if (header[c] === 'Date') {
             td.classList.add('date-column');
           }
